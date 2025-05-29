@@ -2,6 +2,10 @@ import math
 import csv
 from io import StringIO
 
+from openpyxl.styles.numbers import FORMAT_PERCENTAGE_00, FORMAT_NUMBER_COMMA_SEPARATED1, FORMAT_NUMBER
+from openpyxl.workbook import Workbook
+from openpyxl.worksheet import worksheet
+
 # Loan and EPF parameters
 initial_loan = 460000  # RM 460,000
 interest_rate = 0.042  # 4.2% annual interest rate
@@ -89,7 +93,7 @@ def calculate_epf_growth(principal, annual_rate, years):
 
 def print_main(principal, interest_rate, months, total_interest, advanced_payment ):
     print(f"Principal: RM {principal:.2f}")
-    print(f"Interest rate: RM {interest_rate:.2f}")
+    print(f"Interest rate: {interest_rate*100:.2f} %")
     print(f"Number of month: {months:.2f}")
 
     year = months/12
@@ -104,6 +108,91 @@ def print_main(principal, interest_rate, months, total_interest, advanced_paymen
     print(f"Advanced payment: RM {advanced_payment:.2f}")
 
 
+def write_excel(sheet, principal, interest_rate, months, total_interest, advanced_payment,
+                schedule=None):
+    sheet.column_dimensions["A"].width = 7
+    sheet.column_dimensions["B"].width = 11
+
+    start_column = 3
+    row = 1
+    sheet.cell(row=row, column=1, value=f"P (Principal)")
+    sheet.cell(row=row, column=start_column, value=f"={principal}")
+    sheet.cell(row=row, column=start_column).number_format = FORMAT_NUMBER_COMMA_SEPARATED1
+
+    row += 1
+    sheet.cell(row=row, column=1, value=f"I (Interest rate)")
+    sheet.cell(row=row, column=start_column, value=f"={interest_rate}")
+    sheet.cell(row=row, column=start_column).number_format = FORMAT_PERCENTAGE_00
+
+    row += 1
+    sheet.cell(row=row, column=1, value=f"Number of month")
+    sheet.cell(row=row, column=start_column, value=f"={months}")
+    sheet.cell(row=row, column=start_column).number_format = FORMAT_NUMBER
+
+    row += 1
+    sheet.cell(row=row, column=1, value=f"Number of years")
+    sheet.cell(row=row, column=start_column, value='=COUNTIF(C11:C1032,">1")/12')
+    sheet.cell(row=row, column=start_column).number_format = FORMAT_NUMBER
+
+    row += 1
+    rate = interest_rate / 12
+    monthly_payment = principal * rate * (1+rate) ** months / ((1+rate) ** months - 1)
+    sheet.cell(row=row, column=1, value=f"Monthly payment")
+    sheet.cell(row=row, column=start_column, value=f"={monthly_payment}")
+    sheet.cell(row=row, column=start_column).number_format = FORMAT_NUMBER_COMMA_SEPARATED1
+
+    row += 1
+    sheet.cell(row=row, column=1, value=f"Total interest")
+    sheet.cell(row=row, column=start_column, value=f"={total_interest}")
+    sheet.cell(row=row, column=start_column).number_format = FORMAT_NUMBER_COMMA_SEPARATED1
+
+    row += 1
+    sheet.cell(row=row, column=1, value=f"Repayment")
+    sheet.cell(row=row, column=start_column, value=f"={monthly_payment*months}")
+    sheet.cell(row=row, column=start_column).number_format = FORMAT_NUMBER_COMMA_SEPARATED1
+
+    row += 1
+    sheet.cell(row=row, column=1, value=f"Advanced payment")
+    sheet.cell(row=row, column=start_column, value=f"={advanced_payment}")
+    sheet.cell(row=row, column=start_column).number_format = FORMAT_NUMBER_COMMA_SEPARATED1
+
+    write_concise_schedule(sheet, schedule)
+
+
+def write_concise_schedule(sheet, schedule, ):
+    sheet.column_dimensions["C"].width = 10
+    sheet.column_dimensions["E"].width = 11
+    base_index = 10
+    sheet.cell(row=base_index, column=1, value="Month")
+    sheet.cell(row=base_index, column=2, value="Payment")
+    sheet.cell(row=base_index, column=3, value="Interest")
+    sheet.cell(row=base_index, column=4, value="Principal")
+    sheet.cell(row=base_index, column=5, value="Balance")
+
+    # Combine and remove duplicates (in case of overlap)
+    shown_months = set()
+    for row in schedule:
+        if row['Month'] in shown_months:
+            continue
+        shown_months.add(row['Month'])
+        row_adjust = base_index + row['Month']
+        sheet.cell(row=row_adjust, column=1, value=row['Month'])
+
+        sheet.cell(row=row_adjust, column=2, value=row['Payment'])
+        sheet.cell(row=row_adjust, column=2).number_format = FORMAT_NUMBER_COMMA_SEPARATED1
+
+        sheet.cell(row=row_adjust, column=3, value=row['Interest'])
+        sheet.cell(row=row_adjust, column=3).number_format = FORMAT_NUMBER_COMMA_SEPARATED1
+
+        sheet.cell(row=row_adjust, column=4, value=row['Principal'])
+        sheet.cell(row=row_adjust, column=4).number_format = FORMAT_NUMBER_COMMA_SEPARATED1
+
+        sheet.cell(row=row_adjust, column=5, value=row['Balance'])
+        sheet.cell(row=row_adjust, column=5).number_format = FORMAT_NUMBER_COMMA_SEPARATED1
+        if row['Balance'] <= 0.0:
+            break
+
+
 # Scenario 1: Original loan without prepayment
 monthly_payment_original = calculate_monthly_payment(initial_loan, interest_rate, tenure_months)
 drawdown = 0
@@ -111,12 +200,18 @@ schedule_original, csv_original = generate_amortization_schedule(initial_loan, d
                                                                  "original_loan_amortization.csv")
 total_interest_original = sum(row['Interest'] for row in schedule_original)
 
+wb = Workbook()
+del wb['Sheet']
+
 # Print results
 print("=== Home Loan vs EPF Analysis with Amortization ===")
+sheet = wb.create_sheet('Loan without prepayment')
 print("\nScenario 1: Continue loan without prepayment")
 print_main(principal=initial_loan, interest_rate=interest_rate, months=tenure_months,
            total_interest=total_interest_original, advanced_payment=drawdown)
 print_concise_schedule(schedule_original, "Amortization Schedule (Original Loan)")
+write_excel(sheet=sheet, principal=initial_loan, interest_rate=interest_rate, months=tenure_months,
+            total_interest=total_interest_original, advanced_payment=drawdown, schedule=schedule_original)
 
 # Scenario 2: Loan with prepayment
 drawdown = 210000
@@ -125,8 +220,12 @@ schedule_original, csv_original = generate_amortization_schedule(initial_loan, d
 total_interest_original = sum(row['Interest'] for row in schedule_original)
 
 # Print results
+sheet = wb.create_sheet('Loan with prepayment')
 print("\nScenario 2: Loan with prepayment")
 print_main(principal=initial_loan, interest_rate=interest_rate, months=tenure_months,
            total_interest=total_interest_original, advanced_payment=drawdown)
 print_concise_schedule(schedule_original, "Amortization Schedule")
+write_excel(sheet=sheet, principal=initial_loan, interest_rate=interest_rate, months=tenure_months,
+            total_interest=total_interest_original, advanced_payment=drawdown, schedule=schedule_original)
 
+wb.save("out.xlsx")
