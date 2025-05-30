@@ -2,6 +2,7 @@ import math
 import csv
 from io import StringIO
 
+from openpyxl.styles import PatternFill
 from openpyxl.styles.numbers import FORMAT_PERCENTAGE_00, FORMAT_NUMBER_COMMA_SEPARATED1, FORMAT_NUMBER
 from openpyxl.workbook import Workbook
 from openpyxl.worksheet import worksheet
@@ -113,61 +114,69 @@ def write_excel(sheet, principal, interest_rate, months, total_interest, advance
     sheet.column_dimensions["A"].width = 7
     sheet.column_dimensions["B"].width = 11
 
-    start_column = 3
     row = 1
-    sheet.cell(row=row, column=1, value=f"P (Principal)")
-    sheet.cell(row=row, column=start_column, value=f"={principal}")
-    sheet.cell(row=row, column=start_column).number_format = FORMAT_NUMBER_COMMA_SEPARATED1
+    configure_cells(sheet, row, label=f"P (Principal)", value=f"={principal}", number_format=FORMAT_NUMBER_COMMA_SEPARATED1)
 
     row += 1
-    sheet.cell(row=row, column=1, value=f"I (Interest rate)")
-    sheet.cell(row=row, column=start_column, value=f"={interest_rate}")
-    sheet.cell(row=row, column=start_column).number_format = FORMAT_PERCENTAGE_00
+    configure_cells(sheet, row, label=f"I (Interest rate)", value=f"={interest_rate}", number_format=FORMAT_PERCENTAGE_00)
 
     row += 1
-    sheet.cell(row=row, column=1, value=f"Number of month")
-    sheet.cell(row=row, column=start_column, value=f"={months}")
-    sheet.cell(row=row, column=start_column).number_format = FORMAT_NUMBER
+    configure_cells(sheet, row, label=f"Number of month", value=f"={months}", number_format=FORMAT_NUMBER)
 
     row += 1
-    sheet.cell(row=row, column=1, value=f"Number of years")
-    sheet.cell(row=row, column=start_column, value='=COUNTIF(C11:C1032,">1")/12')
-    sheet.cell(row=row, column=start_column).number_format = FORMAT_NUMBER
+    configure_cells(sheet, row, label=f"Number of years", value='=COUNTIF(C11:C1032,">1")/12', number_format=FORMAT_NUMBER)
 
     row += 1
     rate = interest_rate / 12
     monthly_payment = principal * rate * (1+rate) ** months / ((1+rate) ** months - 1)
-    sheet.cell(row=row, column=1, value=f"Monthly payment")
-    sheet.cell(row=row, column=start_column, value=f"={monthly_payment}")
-    sheet.cell(row=row, column=start_column).number_format = FORMAT_NUMBER_COMMA_SEPARATED1
-
+    configure_cells(sheet, row, label=f"Monthly payment", value=f'={monthly_payment}',
+                    number_format=FORMAT_NUMBER_COMMA_SEPARATED1)
     row += 1
-    sheet.cell(row=row, column=1, value=f"Total interest")
-    sheet.cell(row=row, column=start_column, value=f"={total_interest}")
-    sheet.cell(row=row, column=start_column).number_format = FORMAT_NUMBER_COMMA_SEPARATED1
-
+    configure_cells(sheet, row, label=f"Total interest", value=f'={total_interest}',
+                    number_format=FORMAT_NUMBER_COMMA_SEPARATED1)
     row += 1
-    sheet.cell(row=row, column=1, value=f"Repayment")
-    sheet.cell(row=row, column=start_column, value=f"={monthly_payment*months}")
-    sheet.cell(row=row, column=start_column).number_format = FORMAT_NUMBER_COMMA_SEPARATED1
-
+    configure_cells(sheet, row, label=f"Repayment", value=f'={monthly_payment * months}',
+                    number_format=FORMAT_NUMBER_COMMA_SEPARATED1)
     row += 1
-    sheet.cell(row=row, column=1, value=f"Advanced payment")
-    sheet.cell(row=row, column=start_column, value=f"={advanced_payment}")
-    sheet.cell(row=row, column=start_column).number_format = FORMAT_NUMBER_COMMA_SEPARATED1
-
+    configure_cells(sheet, row, label=f"Advanced payment", value=f'={advanced_payment}',
+                    number_format=FORMAT_NUMBER_COMMA_SEPARATED1)
     write_concise_schedule(sheet, schedule)
+
+
+def configure_cells(sheet, row, label, value=None, number_format=None):
+    """
+    Configure a group of cells for background color
+    """
+    fill = PatternFill(start_color="e1e1ebe7", end_color="e1e1ebe7", fill_type="solid")
+    sheet.cell(row=row, column=1).fill = fill
+    sheet.cell(row=row, column=1, value=label)
+    sheet.cell(row=row, column=2).fill = fill
+
+    start_column = 3
+    if value is not None:
+        sheet.cell(row=row, column=start_column, value=value)
+        sheet.cell(row=row, column=start_column).number_format = number_format
 
 
 def write_concise_schedule(sheet, schedule, ):
     sheet.column_dimensions["C"].width = 10
     sheet.column_dimensions["E"].width = 11
     base_index = 10
+    fill = PatternFill(start_color="e1e1ebe7", end_color="e1e1ebe7", fill_type="solid")
     sheet.cell(row=base_index, column=1, value="Month")
+    sheet.cell(row=base_index, column=1).fill = fill
+
     sheet.cell(row=base_index, column=2, value="Payment")
+    sheet.cell(row=base_index, column=2).fill = fill
+
     sheet.cell(row=base_index, column=3, value="Interest")
+    sheet.cell(row=base_index, column=3).fill = fill
+
     sheet.cell(row=base_index, column=4, value="Principal")
+    sheet.cell(row=base_index, column=4).fill = fill
+
     sheet.cell(row=base_index, column=5, value="Balance")
+    sheet.cell(row=base_index, column=5).fill = fill
 
     # Combine and remove duplicates (in case of overlap)
     shown_months = set()
