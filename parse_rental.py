@@ -1,6 +1,9 @@
 from datetime import datetime
 from dateutil.parser import parse
 import re
+import requests
+from bs4 import BeautifulSoup
+import statistics
 
 # TODO hard coded numbers
 # Sample data from the document (simulating the parsed content)
@@ -44,7 +47,7 @@ def parse_price_per_sqft(price_per_sqft_str):
     return float(m.group(1))
 
 
-# Function to parse date and check if within the last year
+# Function to check if date is within the last year
 def is_within_last_year(date_str, current_date):
     try:
         post_date = parse(date_str)
@@ -53,48 +56,95 @@ def is_within_last_year(date_str, current_date):
         return False
 
 
-# Current date
-current_date = datetime(2025, 6, 9)
+# Function to scrape listings (placeholder)
+def scrape_listings(url):
+    try:
+        headers = {'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) Chrome/91.0.4472.124'}
+        response = requests.get(url, headers=headers, timeout=10)
+        response.raise_for_status()
+        soup = BeautifulSoup(response.content, 'html.parser')
+        # TODO: Implement actual parsing based on website HTML structure
+        print("Scraping not implemented; using sample data.")
+        return listings_data
+    except Exception as e:
+        # TODO Scraped data
+        print(f"Error scraping: {e}. Using sample data.")
+        return listings_data
 
-# Filter listings within the last year and parse details
-recent_listings = []
-for listing in listings_data:
-    if is_within_last_year(listing["date"], current_date):
-        parsed_listing = {
-            "agent": listing["agent"],
-            "date": listing["date"],
-            "price_rm": parse_price(listing["price"]),
-            "price_per_sqft_rm": parse_price_per_sqft(listing["price_per_sqft"]),
-            "size_sqft": parse_size(listing["size"]),
-            "bedrooms": listing["bedrooms"],
-            "bathrooms": listing["bathrooms"],
-            "parking": listing["parking"],
-            "furnished": listing["furnished"]
-        }
-        recent_listings.append(parsed_listing)
 
-# Print parsed listings
-print(f"Found {len(recent_listings)} rental listings within the last year:")
-dates = []
-prices = []
-prices_per_sq = []
+# Function to filter listings and compute statistics
+def filter_listings_by_price_per_sqft(listings, min_price_per_sqft, max_price_per_sqft, current_date):
+    matching_listings = []
+    price_per_sqft_values = []
 
-# Find prices and dates that fit perice per sqft
-for listing in recent_listings:
-    print("\nListing Details:")
-    print(f"Agent: {listing['agent']}")
-    print(f"Date: {listing['date']}")
-    dates.append(listing['date'])
-    print(f"Price: RM {listing['price_rm']:.2f}")
-    prices.append(listing['price_rm'])
-    print(f"Price per sq. ft.: RM {listing['price_per_sqft_rm']:.2f}")
-    prices_per_sq.append(listing['price_per_sqft_rm'])
-    print(f"Size: {listing['size_sqft']:.0f} sq. ft.")
-    print(f"Bedrooms: {listing['bedrooms']}")
-    print(f"Bathrooms: {listing['bathrooms']}")
-    print(f"Parking: {listing['parking']}")
-    print(f"Furnished: {listing['furnished']}")
+    for listing in listings:
+        if is_within_last_year(listing["date"], current_date):
+            price_per_sqft = parse_price_per_sqft(listing["price_per_sqft"])
+            if min_price_per_sqft <= price_per_sqft <= max_price_per_sqft:
+                parsed_listing = {
+                    "agent": listing["agent"],
+                    "date": listing["date"],
+                    "price_rm": parse_price(listing["price"]),
+                    "price_per_sqft_rm": price_per_sqft,
+                    "size_sqft": parse_size(listing["size"]),
+                    "bedrooms": listing["bedrooms"],
+                    "bathrooms": listing["bathrooms"],
+                    "parking": listing["parking"],
+                    "furnished": listing["furnished"]
+                }
+                matching_listings.append(parsed_listing)
+                price_per_sqft_values.append(price_per_sqft)
 
-print("\nAverage price per sqft is", sum(prices_per_sq)/len(prices_per_sq))
-pass
+    # Calculate statistics
+    stats = {}
+    if price_per_sqft_values:
+        stats["min"] = min(price_per_sqft_values)
+        stats["max"] = max(price_per_sqft_values)
+        stats["median"] = statistics.median(price_per_sqft_values)
 
+    return matching_listings, stats
+
+
+# Parameters
+url = "https://www.iproperty.com.my/rent/kl-city-centre/suasana-bukit-ceylon-raja-chulan-residences-y8wzqe/serviced-residence/?l1"
+current_date = datetime(2025, 6, 11, 13, 6)  # 01:06 PM, June 11, 2025
+min_price_per_sqft = 3.0  # Minimum price per sq. ft. (RM)
+max_price_per_sqft = 3.5  # Maximum price per sq. ft. (RM)
+
+# Narrower range
+# min_price_per_sqft = 3.2  # Minimum price per sq. ft. (RM)
+# max_price_per_sqft = 3.4  # Maximum price per sq. ft. (RM)
+
+# Get listings
+listings = scrape_listings(url)
+
+# Filter listings and get statistics
+matching_listings, stats = filter_listings_by_price_per_sqft(listings, min_price_per_sqft, max_price_per_sqft,
+                                                             current_date)
+
+# Print statistics
+print(f"\nPrice per Sq. Ft. Statistics for Listings between RM {min_price_per_sqft} and RM {max_price_per_sqft}:")
+if stats:
+    print(f"Minimum: RM {stats['min']:.2f} per sq. ft.")
+    print(f"Maximum: RM {stats['max']:.2f} per sq. ft.")
+    print(f"Median: RM {stats['median']:.2f} per sq. ft.")
+else:
+    print("No listings match the criteria; no statistics available.")
+
+# Print matching listings
+print(
+    f"\nFound {len(matching_listings)} listings with price per sq. ft. between RM {min_price_per_sqft} and RM {max_price_per_sqft}:")
+if matching_listings:
+    for listing in matching_listings:
+        print("\nListing Details:")
+        print(f"Agent: {listing['agent']}")
+        print(f"Date: {listing['date']}")
+        print(f"Price: RM {listing['price_rm']:.2f}")
+        print(f"Price per sq. ft.: RM {listing['price_per_sqft_rm']:.2f}")
+        print(f"Size: {listing['size_sqft']:.0f} sq. ft.")
+        print(f"Bedrooms: {listing['bedrooms']}")
+        print(f"Bathrooms: {listing['bathrooms']}")
+        print(f"Parking: {listing['parking']}")
+        print(f"Furnished: {listing['furnished']}")
+else:
+    print("No listings match the specified criteria.")
