@@ -7,7 +7,7 @@ def run():
         wb = xw.Book("house_payment.xlsm")
         ws = wb.sheets["Estimation Expenses"]
         print(f"Opened workbook: {wb.name}")
-        for i in range(2, 8):
+        for i in range(2, 9):
             check_update(wb, i)
 
         print(""); print(f"ℹ️ {ws.range('A10').value}")
@@ -15,7 +15,7 @@ def run():
             check_update(wb, i)
 
         print(""); print(f"ℹ️ {ws.range('A15').value}")
-        for i in range(16, 20):
+        for i in range(16, 21):
             check_update(wb, i)
 
         print(""); print(f"ℹ️ {ws.range('A21').value}")
@@ -39,9 +39,9 @@ def check_neutral(wb, row_num):
     # print(f"Checking row {row_num}, Status: {status}")
     if status == "Neutral":
         due_date = ws.range(f"F{row_num}").value
-        print(f"⚠️ {ws.range(f'A{row_num}').value}: Status is Neutral. Due date is {due_date}. Consider payment.")
+        print(f"⚠️ {ws.range(f'A{row_num}').value}: Status is {status}. Due date is {due_date.strftime("%d-%m-%y")}. Consider payment.")
     elif status == "Bad":
-        print(f"📛 {ws.range(f'A{row_num}').value}: Status is Bad.")
+        print(f"📛 {ws.range(f'A{row_num}').value}: Status is {status}.")
 
 
 def update_next_invoice(wb, row_num):
