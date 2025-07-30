@@ -22,6 +22,11 @@ def run():
         for i in range(22, 26):
             check_update(wb, i)
 
+        print("");
+        print(f"ℹ️ {ws.range('A26').value}")
+        for i in range(27, 28):
+            check_update(wb, i)
+
         # wb.save(); wb.close()
         print("xlwings update completed.")
     except Exception as e:
@@ -58,10 +63,12 @@ def update_next_invoice(wb, row_num):
                 ws.range(f"E{row_num}").value = next_payment.strftime("%d-%m-%y") if isinstance(next_payment, datetime) else next_payment
                 ws.range(f"I{row_num}").value = ws.range(f"I{row_num}").value + 1
                 ws.range(f"G{row_num}").value = ""
-                print(f"\U0001F4C5 {ws.range(f'A{row_num}').value}: Scheduled to new invoice date on {ws.range(f'E{row_num}').value}")
+                print(f"\U0001F4C5 {ws.range(f'A{row_num}').value}: "
+                      f"Scheduled to new invoice date on {next_payment.strftime('%d-%m-%y')}")
         else:
             print(f"\u2705 {ws.range(f'A{row_num}').value}: No invoice to schedule lesser than {limit} "
-                  f"days despite recent payment in {date_paid}. Next date payment will be: {ws.range(f'G{row_num}').value}")
+                  f"days despite recent payment in {date_paid.strftime("%d-%m-%y")}. Next date payment will be: "
+                  f"{ws.range(f'G{row_num}').value.strftime("%d-%m-%y")}")
     else:
         print(f"{ws.range(f'A{row_num}').value}: Nothing since no payment was made on invoice")
 
@@ -79,3 +86,4 @@ if __name__ == "__main__":
 
 # Emoticons website
 # https://emojiterra.com/search/info/#google_vignette
+# https://emojidb.org/
