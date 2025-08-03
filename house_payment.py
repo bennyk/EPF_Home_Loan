@@ -1,6 +1,8 @@
 import xlwings as xw
 from datetime import datetime, timedelta
 
+verbose = 0
+
 
 def run():
     try:
@@ -50,6 +52,7 @@ def check_neutral(wb, row_num):
 
 
 def update_next_invoice(wb, row_num):
+    global verbose
     ws = wb.sheets["Estimation Expenses"]
     date_paid = ws.range(f"J{row_num}").value
     # print(f"Processing row {row_num}, Date Paid: {date_paid}")
@@ -66,11 +69,13 @@ def update_next_invoice(wb, row_num):
                 print(f"\U0001F4C5 {ws.range(f'A{row_num}').value}: "
                       f"Scheduled to new invoice date on {next_payment.strftime('%d-%m-%y')}")
         else:
-            print(f"\u2705 {ws.range(f'A{row_num}').value}: No invoice to schedule lesser than {limit} "
-                  f"days despite recent payment in {date_paid.strftime("%d-%m-%y")}. Next date payment will be: "
-                  f"{ws.range(f'G{row_num}').value.strftime("%d-%m-%y")}")
+            if verbose > 0:
+                print(f"\u2705 {ws.range(f'A{row_num}').value}: No invoice to schedule lesser than {limit} "
+                      f"days despite recent payment in {date_paid.strftime("%d-%m-%y")}. Next date payment will be: "
+                      f"{ws.range(f'G{row_num}').value.strftime("%d-%m-%y")}")
     else:
-        print(f"{ws.range(f'A{row_num}').value}: Nothing since no payment was made on invoice")
+        if verbose > 0:
+            print(f"{ws.range(f'A{row_num}').value}: Nothing since no payment was made on invoice")
 
 
 def main():
