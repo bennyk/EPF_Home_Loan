@@ -53,6 +53,7 @@ def check_neutral(wb, row_num):
 
     # Target "Date Paid" cell (Column J)
     date_paid_cell = ws.range(f"J{row_num}")
+    date_paid_cell.color = None
 
     if status == "Neutral":
         due_date = ws.range(f"F{row_num}").value
