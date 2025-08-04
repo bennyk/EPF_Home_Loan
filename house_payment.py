@@ -8,6 +8,11 @@ def run():
     try:
         wb = xw.Book("house_payment.xlsm")
         ws = wb.sheets["Estimation Expenses"]
+
+        # TODO xlwings sheets does not implement protect or unprotect sheets. Hmm
+        # ws.unprotect()
+        # ws.protect(password="xlwings")
+
         print(f"Opened workbook: {wb.name}")
         for i in range(2, 9):
             check_update(wb, i)
@@ -43,12 +48,26 @@ def check_update(wb, row_num):
 def check_neutral(wb, row_num):
     ws = wb.sheets["Estimation Expenses"]
     status = ws.range(f"L{row_num}").value
+    item_name = ws.range(f"A{row_num}").value
     # print(f"Checking row {row_num}, Status: {status}")
+
+    # Target "Date Paid" cell (Column J)
+    date_paid_cell = ws.range(f"J{row_num}")
+
     if status == "Neutral":
         due_date = ws.range(f"F{row_num}").value
-        print(f"⚠️ {ws.range(f'A{row_num}').value}: Status is {status}. Due date is {due_date.strftime("%d-%m-%y")}. Consider payment.")
+        print(f"⚠️ {item_name}: Status is {status}. Due date is {due_date.strftime('%d-%m-%y')}. Consider payment.")
+
+        # Clear any prefilled content and highlight the cell
+        date_paid_cell.value = ""
+        date_paid_cell.color = (255, 255, 153)  # Post-it yellow
+
     elif status == "Bad":
-        print(f"📛 {ws.range(f'A{row_num}').value}: Status is {status}.")
+        print(f"📛 {item_name}: Status is {status}.")
+
+        # Clear and highlight here too, if that's consistent with your system
+        date_paid_cell.value = ""
+        date_paid_cell.color = (255, 255, 153)
 
 
 def update_next_invoice(wb, row_num):
