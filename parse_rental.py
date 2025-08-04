@@ -4,6 +4,7 @@ import re
 import requests
 from bs4 import BeautifulSoup
 import statistics
+import numpy as np
 
 # TODO hard coded numbers
 # Sample data from the document (simulating the parsed content)
@@ -63,17 +64,42 @@ def scrape_listings(url):
         response = requests.get(url, headers=headers, timeout=10)
         response.raise_for_status()
         soup = BeautifulSoup(response.content, 'html.parser')
-        # TODO: Implement actual parsing based on website HTML structure
+        # TODO: Implement parsing based on website HTML
         print("Scraping not implemented; using sample data.")
         return listings_data
     except Exception as e:
-        # TODO Scraped data
         print(f"Error scraping: {e}. Using sample data.")
         return listings_data
 
 
-# Function to filter listings and compute statistics
-def filter_listings_by_price_per_sqft(listings, min_price_per_sqft, max_price_per_sqft, current_date):
+# Phase 1: Determine dynamic price per sq. ft. range
+def phase1_determine_range(listings, current_date):
+    price_per_sqft_values = []
+
+    for listing in listings:
+        if is_within_last_year(listing["date"], current_date):
+            price_per_sqft = parse_price_per_sqft(listing["price_per_sqft"])
+            price_per_sqft_values.append(price_per_sqft)
+
+    if not price_per_sqft_values:
+        return None, None
+
+    # Calculate Q1, Q3, and IQR
+    q1 = np.percentile(price_per_sqft_values, 25)
+    q3 = np.percentile(price_per_sqft_values, 75)
+    iqr = q3 - q1
+
+    # Determine range, capped at data's min and max
+    min_price_per_sqft = max(min(price_per_sqft_values), q1 - 1.5 * iqr)
+    min_price_per_sqft *= 1.2
+    max_price_per_sqft = min(max(price_per_sqft_values), q3 + 1.5 * iqr)
+    max_price_per_sqft *= .8
+
+    return min_price_per_sqft, max_price_per_sqft
+
+
+# Phase 2: Filter listings and compute statistics
+def phase2_filter_and_stats(listings, min_price_per_sqft, max_price_per_sqft, current_date):
     matching_listings = []
     price_per_sqft_values = []
 
@@ -105,35 +131,36 @@ def filter_listings_by_price_per_sqft(listings, min_price_per_sqft, max_price_pe
     return matching_listings, stats
 
 
-# Parameters
+# Main script
 url = "https://www.iproperty.com.my/rent/kl-city-centre/suasana-bukit-ceylon-raja-chulan-residences-y8wzqe/serviced-residence/?l1"
-current_date = datetime(2025, 6, 11, 13, 6)  # 01:06 PM, June 11, 2025
-min_price_per_sqft = 3.0  # Minimum price per sq. ft. (RM)
-max_price_per_sqft = 3.5  # Maximum price per sq. ft. (RM)
-
-# Narrower range
-# min_price_per_sqft = 3.2  # Minimum price per sq. ft. (RM)
-# max_price_per_sqft = 3.4  # Maximum price per sq. ft. (RM)
+current_date = datetime(2025, 6, 11, 17, 8)  # 05:08 PM, June 11, 2025
 
 # Get listings
 listings = scrape_listings(url)
 
-# Filter listings and get statistics
-matching_listings, stats = filter_listings_by_price_per_sqft(listings, min_price_per_sqft, max_price_per_sqft,
-                                                             current_date)
+# Phase 1: Determine range
+min_price_per_sqft, max_price_per_sqft = phase1_determine_range(listings, current_date)
+
+if min_price_per_sqft is None or max_price_per_sqft is None:
+    print("No valid listings found within the last year.")
+    exit()
+
+print(f"\nDynamically determined price per sq. ft. range: RM {min_price_per_sqft:.2f} to RM {max_price_per_sqft:.2f}")
+
+# Phase 2: Filter and compute statistics
+matching_listings, stats = phase2_filter_and_stats(listings, min_price_per_sqft, max_price_per_sqft, current_date)
 
 # Print statistics
-print(f"\nPrice per Sq. Ft. Statistics for Listings between RM {min_price_per_sqft} and RM {max_price_per_sqft}:")
+print(f"\nPrice per Sq. Ft. Statistics for Filtered Listings:")
 if stats:
     print(f"Minimum: RM {stats['min']:.2f} per sq. ft.")
     print(f"Maximum: RM {stats['max']:.2f} per sq. ft.")
     print(f"Median: RM {stats['median']:.2f} per sq. ft.")
 else:
-    print("No listings match the criteria; no statistics available.")
+    print("No listings match the dynamic range; no statistics available.")
 
 # Print matching listings
-print(
-    f"\nFound {len(matching_listings)} listings with price per sq. ft. between RM {min_price_per_sqft} and RM {max_price_per_sqft}:")
+print(f"\nFound {len(matching_listings)} listings within the dynamic price per sq. ft. range:")
 if matching_listings:
     for listing in matching_listings:
         print("\nListing Details:")
@@ -147,4 +174,4 @@ if matching_listings:
         print(f"Parking: {listing['parking']}")
         print(f"Furnished: {listing['furnished']}")
 else:
-    print("No listings match the specified criteria.")
+    print("No listings match the dynamic range.")
