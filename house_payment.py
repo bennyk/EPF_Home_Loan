@@ -65,7 +65,8 @@ def update_next_invoice(wb, row_num):
             if next_payment != "Nope":
                 ws.range(f"E{row_num}").value = next_payment.strftime("%d-%m-%y") if isinstance(next_payment, datetime) else next_payment
                 ws.range(f"I{row_num}").value = ws.range(f"I{row_num}").value + 1
-                ws.range(f"G{row_num}").value = ""
+                ws.range(f"G{row_num}").value = "Nope"
+                ws.range(f"J{row_num}").value = ""
                 print(f"\U0001F4C5 {ws.range(f'A{row_num}').value}: "
                       f"Scheduled to new invoice date on {next_payment.strftime('%d-%m-%y')}")
         else:
