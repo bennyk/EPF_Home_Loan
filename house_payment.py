@@ -41,8 +41,9 @@ def run():
 
 
 def check_update(wb, row_num):
-    check_neutral(wb, row_num)
+    # Update first before checking.
     update_next_invoice(wb, row_num)
+    check_neutral(wb, row_num)
 
 
 def check_neutral(wb, row_num):
