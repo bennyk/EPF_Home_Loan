@@ -3,6 +3,10 @@ from datetime import datetime, timedelta
 
 verbose = 0
 
+# Mapping text to column
+my_dict = {"Type": 'A', "Invoice date": 'E', "Due date": 'F', "Next payment": 'G', "Days": 'H',
+           "State": 'I', "Date paid": 'J', "State flag": 'K', "Status [4]": 'L' }
+
 
 def run():
     try:
@@ -18,8 +22,8 @@ def run():
             check_update(wb, i)
 
         for i in range(12, 33):
-            if ws.range(f"A{i}").value[0] == "🏠":
-                print(f"ℹ️ {ws.range(f'A{i}').value}")
+            if ws.range(f"{my_dict["Type"]}{i}").value[0] == "🏠":
+                print(f"ℹ️ {ws.range(f'{my_dict["Type"]}{i}').value}")
             else:
                 check_update(wb, i)
 
@@ -37,8 +41,8 @@ def check_update(wb, row_num):
 
 def check_neutral(wb, row_num):
     ws = wb.sheets["Estimation Expenses"]
-    status = ws.range(f"L{row_num}").value
-    item_name = ws.range(f"A{row_num}").value
+    status = ws.range(f"{my_dict["Status [4]"]}{row_num}").value
+    item_name = ws.range(f"{my_dict["Type"]}{row_num}").value
     # print(f"Checking row {row_num}, Status: {status}")
 
     # Target "Date Paid" cell (Column J)
@@ -46,7 +50,7 @@ def check_neutral(wb, row_num):
     date_paid_cell.color = None
 
     if status == "Neutral":
-        due_date = ws.range(f"F{row_num}").value
+        due_date = ws.range(f"{my_dict["Due date"]}{row_num}").value
         print(f"⚠️ {item_name}: Status is {status}. Due date is {due_date.strftime('%d-%m-%y')}. Consider payment.")
 
         # Clear any prefilled content and highlight the cell
@@ -73,20 +77,20 @@ def update_next_invoice(wb, row_num):
         if (datetime.now() - date_paid).days > limit:
             next_payment = ws.range(f"G{row_num}").value
             if next_payment != "Nope":
-                ws.range(f"E{row_num}").value = next_payment.strftime("%d-%m-%y") if isinstance(next_payment, datetime) else next_payment
-                ws.range(f"I{row_num}").value = ws.range(f"I{row_num}").value + 1
-                ws.range(f"G{row_num}").value = "Nope"
+                ws.range(f"{my_dict["Invoice date"]}{row_num}").value = next_payment.strftime("%d-%m-%y") if isinstance(next_payment, datetime) else next_payment
+                ws.range(f"{my_dict["State"]}{row_num}").value = ws.range(f"{my_dict["State"]}{row_num}").value + 1
+                ws.range(f"{my_dict["Next payment"]}{row_num}").value = "Nope"
                 ws.range(f"J{row_num}").value = ""
-                print(f"\U0001F4C5 {ws.range(f'A{row_num}').value}: "
+                print(f"\U0001F4C5 {ws.range(f'{my_dict["Type"]}{row_num}').value}: "
                       f"Scheduled to new invoice date on {next_payment.strftime('%d-%m-%y')}")
         else:
             if verbose > 0:
-                print(f"\u2705 {ws.range(f'A{row_num}').value}: No invoice to schedule lesser than {limit} "
+                print(f"\u2705 {ws.range(f'{my_dict["Type"]}{row_num}').value}: No invoice to schedule lesser than {limit} "
                       f"days despite recent payment in {date_paid.strftime("%d-%m-%y")}. Next date payment will be: "
                       f"{ws.range(f'G{row_num}').value.strftime("%d-%m-%y")}")
     else:
         if verbose > 0:
-            print(f"{ws.range(f'A{row_num}').value}: Nothing since no payment was made on invoice")
+            print(f"{ws.range(f'{my_dict["Type"]}{row_num}').value}: Nothing since no payment was made on invoice")
 
 
 def main():
