@@ -14,25 +14,14 @@ def run():
         # ws.protect(password="xlwings")
 
         print(f"Opened workbook: {wb.name}")
-        for i in range(2, 9):
+        for i in range(2, 11):
             check_update(wb, i)
 
-        print(""); print(f"ℹ️ {ws.range('A10').value}")
-        for i in range(11, 15):
-            check_update(wb, i)
-
-        print(""); print(f"ℹ️ {ws.range('A15').value}")
-        for i in range(16, 21):
-            check_update(wb, i)
-
-        print(""); print(f"ℹ️ {ws.range('A21').value}")
-        for i in range(22, 26):
-            check_update(wb, i)
-
-        print("");
-        print(f"ℹ️ {ws.range('A26').value}")
-        for i in range(27, 28):
-            check_update(wb, i)
+        for i in range(12, 33):
+            if ws.range(f"A{i}").value[0] == "🏠":
+                print(f"ℹ️ {ws.range(f'A{i}').value}")
+            else:
+                check_update(wb, i)
 
         # wb.save(); wb.close()
         print("xlwings update completed.")
@@ -106,7 +95,6 @@ def main():
 
 if __name__ == "__main__":
     try:
-        xw.Book("house_payment.xlsm")
         main()
     except Exception as e:
         print(f"Failed to open workbook: {e}")
