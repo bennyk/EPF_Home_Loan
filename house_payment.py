@@ -5,7 +5,7 @@ verbose = 0
 
 # Mapping text to column
 my_dict = {"Type": 'A', "Invoice date": 'E', "Due date": 'F', "Next payment": 'G', "Days": 'H',
-           "State": 'I', "Date paid": 'J', "State flag": 'K', "Status [4]": 'L' }
+           "Date paid": 'I', "State flag": 'J', "Status [4]": 'K' }
 
 
 def run():
@@ -46,7 +46,7 @@ def check_neutral(wb, row_num):
     # print(f"Checking row {row_num}, Status: {status}")
 
     # Target "Date Paid" cell (Column J)
-    date_paid_cell = ws.range(f"J{row_num}")
+    date_paid_cell = ws.range(f"{my_dict["Date paid"]}{row_num}")
     date_paid_cell.color = None
 
     if status == "Neutral":
@@ -68,7 +68,7 @@ def check_neutral(wb, row_num):
 def update_next_invoice(wb, row_num):
     global verbose
     ws = wb.sheets["Estimation Expenses"]
-    date_paid = ws.range(f"J{row_num}").value
+    date_paid = ws.range(f"{my_dict["Date paid"]}{row_num}").value
     # print(f"Processing row {row_num}, Date Paid: {date_paid}")
     if date_paid is not None and date_paid != "":
         if isinstance(date_paid, (int, float)):
@@ -80,7 +80,7 @@ def update_next_invoice(wb, row_num):
                 ws.range(f"{my_dict["Invoice date"]}{row_num}").value = next_payment.strftime("%d-%m-%y") if isinstance(next_payment, datetime) else next_payment
                 ws.range(f"{my_dict["State"]}{row_num}").value = ws.range(f"{my_dict["State"]}{row_num}").value + 1
                 ws.range(f"{my_dict["Next payment"]}{row_num}").value = "Nope"
-                ws.range(f"J{row_num}").value = ""
+                ws.range(f"{my_dict["Date paid"]}{row_num}").value = ""
                 print(f"\U0001F4C5 {ws.range(f'{my_dict["Type"]}{row_num}').value}: "
                       f"Scheduled to new invoice date on {next_payment.strftime('%d-%m-%y')}")
         else:
