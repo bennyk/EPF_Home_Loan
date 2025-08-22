@@ -12,6 +12,7 @@ def run():
     try:
         wb = xw.Book("house_payment.xlsm")
         ws = wb.sheets["Estimation Expenses"]
+        ws.api.Unprotect()
 
         # TODO xlwings sheets does not implement protect or unprotect sheets. Hmm
         # ws.unprotect()
@@ -29,6 +30,10 @@ def run():
 
         # wb.save(); wb.close()
         print("xlwings update completed.")
+
+        # Reprotect the sheet if it was protected
+        if ws.api.ProtectContents is False:
+            ws.api.Protect()
     except Exception as e:
         print(f"Error in run: {e}")
 
