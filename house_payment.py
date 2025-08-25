@@ -84,7 +84,6 @@ def update_next_invoice(wb, row_num):
             if next_payment != "Nope":
                 ws.range(f"{my_dict["Invoice date"]}{row_num}").value = next_payment.strftime("%d-%m-%y") if isinstance(next_payment, datetime) else next_payment
                 ws.range(f"{my_dict["State flag"]}{row_num}").value = ws.range(f"{my_dict["State flag"]}{row_num}").value + 1
-                ws.range(f"{my_dict["Next payment"]}{row_num}").value = "Nope"
                 ws.range(f"{my_dict["Date paid"]}{row_num}").value = ""
                 print(f"\U0001F4C5 {ws.range(f'{my_dict["Type"]}{row_num}').value}: "
                       f"Scheduled to new invoice date on {next_payment.strftime('%d-%m-%y')}")
