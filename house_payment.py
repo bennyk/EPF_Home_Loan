@@ -88,7 +88,7 @@ def update_next_invoice(wb, row_num):
             if days_value < 0 or (datetime.now() - due_date).days > 0:
                 next_payment = ws.range(f"{my_dict['Next payment']}{row_num}").value
                 if next_payment != "Nope":
-                    assert isinstance(next_payment, (int, float))
+                    assert isinstance(next_payment, datetime)
                     next_payment = datetime(1899, 12, 30) + timedelta(days=next_payment)
                     ws.range(f"{my_dict['Invoice date']}{row_num}").value = next_payment
                     ws.range(f"{my_dict['Invoice date']}{row_num}").number_format = "dd-mm-yy"
