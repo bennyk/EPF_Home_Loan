@@ -74,14 +74,8 @@ def update_next_invoice(wb, row_num):
     ws = wb.sheets["Estimation Expenses"]
     # print(f"Processing row {row_num}, Date Paid: {date_paid}")
     date_paid = ws.range(f"{my_dict["Date paid"]}{row_num}").value
-
     if date_paid is not None and date_paid != "":
-        if isinstance(date_paid, (int, float)):
-            date_paid = datetime(1899, 12, 30) + timedelta(days=date_paid)
         due_date = ws.range(f"{my_dict['Due date']}{row_num}").value
-        if isinstance(due_date, (int, float)):
-            due_date = datetime(1899, 12, 30) + timedelta(days=due_date)
-
         days_value = ws.range(f"{my_dict['Days']}{row_num}").value
         if isinstance(days_value, (int, float)):
             # Check if due date is past (days_value < 0) or use direct comparison
@@ -89,19 +83,20 @@ def update_next_invoice(wb, row_num):
                 next_payment = ws.range(f"{my_dict['Next payment']}{row_num}").value
                 if next_payment != "Nope":
                     assert isinstance(next_payment, datetime)
-                    next_payment = datetime(1899, 12, 30) + timedelta(days=next_payment)
                     ws.range(f"{my_dict['Invoice date']}{row_num}").value = next_payment
                     ws.range(f"{my_dict['Invoice date']}{row_num}").number_format = "dd-mm-yy"
                     # # State flag and Next payment no longer needed with Excel formula
                     # ws.range(f"{my_dict['State flag']}{row_num}").value = ws.range(f"{my_dict['State flag']}{row_num}").value + 1
                     # ws.range(f"{my_dict['Next payment']}{row_num}").value = ""
+                    ws.range(f"{my_dict['Date paid']}{row_num}").value = ""
                     formatted_date = (ws.range(f"{my_dict['Invoice date']}{row_num}").value.strftime("%d-%m-%y")
                                     if isinstance(ws.range(f"{my_dict['Invoice date']}{row_num}").value, datetime) else "N/A")
                     print(f"{ws.range(f'{my_dict["Type"]}{row_num}').value}: Scheduled to new invoice date on {formatted_date}")
             else:
                 formatted_date = (date_paid.strftime("%d-%m-%y") if isinstance(date_paid, datetime) else str(date_paid))
                 if verbose:
-                    print(f"{ws.range(f'{my_dict["Type"]}{row_num}').value}: No invoice to schedule, less than 0 days since {formatted_date}. Next date payment will be: {ws.range(f'{my_dict["Next payment"]}{row_num}').value}")
+                    print(f"{ws.range(f'{my_dict["Type"]}{row_num}').value}: No invoice to schedule, less than 0 days since {formatted_date}. "
+                          f"Next date payment will be: {ws.range(f'{my_dict["Next payment"]}{row_num}').value}")
         else:
             if verbose:
                 print(f"{ws.range(f'{my_dict["Type"]}{row_num}').value}: Nothing since no due date or invalid days")
