@@ -19,7 +19,7 @@ def run():
         # ws.protect(password="xlwings")
 
         print(f"Opened workbook: {wb.name}")
-        for i in range(2, 33):
+        for i in range(2, 41):
             if ws.range(f"{my_dict["Type"]}{i}").value is None:
                 continue
 
